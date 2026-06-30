@@ -4,6 +4,7 @@ import base64
 import uuid
 import time
 import threading
+import queue as _queue
 import smtplib
 from email.mime.text import MIMEText
 from datetime import date, timedelta
