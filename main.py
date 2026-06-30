@@ -173,8 +173,8 @@ _sessions: dict = {}
 
 class AuthSession:
     def __init__(self):
-        self.mfa_queue    = threading.Queue()
-        self.result_queue = threading.Queue()
+        self.mfa_queue    = _queue.Queue()
+        self.result_queue = _queue.Queue()
         self.needs_mfa    = threading.Event()
         self.client       = None
 
