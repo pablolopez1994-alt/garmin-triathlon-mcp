@@ -6,7 +6,8 @@ from garminconnect import Garmin
 from mcp.server.fastmcp import FastMCP
 from apscheduler.schedulers.background import BackgroundScheduler
 
-mcp = FastMCP("Garmin Triatlón")
+port = int(os.environ.get("PORT", 8000))
+mcp = FastMCP("Garmin Triatlón", host="0.0.0.0", port=port)
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -176,5 +177,4 @@ if __name__ == "__main__":
     scheduler.add_job(send_weekly_email, "cron", day_of_week="mon", hour=8, minute=0)
     scheduler.start()
 
-    port = int(os.environ.get("PORT", 8000))
-    mcp.run(transport="sse", host="0.0.0.0", port=port)
+    mcp.run(transport="sse")
