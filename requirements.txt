@@ -1,0 +1,4 @@
+garminconnect==0.2.22
+mcp[cli]
+fastmcp
+apscheduler==3.10.4
