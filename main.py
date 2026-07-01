@@ -180,15 +180,22 @@ class AuthSession:
 
 def _run_login(email: str, password: str, sess: AuthSession):
     def get_mfa():
+        print("[AUTH] Garmin pide MFA, esperando código del usuario...")
         sess.needs_mfa.set()
-        return sess.mfa_queue.get(timeout=300)
+        code = sess.mfa_queue.get(timeout=300)
+        print(f"[AUTH] Código MFA recibido, verificando con Garmin...")
+        return code
     try:
+        print(f"[AUTH] Iniciando login para {email}")
         client = Garmin(email, password)
         client.prompt_mfa = get_mfa
         client.login()
+        print("[AUTH] Login exitoso")
         sess.client = client
         sess.result_queue.put(("ok", None))
     except Exception as e:
+        import traceback
+        print(f"[AUTH] Error completo:\n{traceback.format_exc()}")
         sess.result_queue.put(("err", str(e)))
 
 CSS = """<style>
@@ -252,11 +259,14 @@ async def auth_mfa(request: Request):
     sess = _sessions.get(sid)
     if not sess:
         return HTMLResponse("<h2>Sesión no encontrada</h2><a href='/auth'>Volver</a>")
+    print(f"[AUTH] Enviando código MFA a la cola: {code}")
     sess.mfa_queue.put(code)
     try:
         result, err = sess.result_queue.get(timeout=120)
+        print(f"[AUTH] Resultado: {result} / {err}")
         return _result_page(sess, result, err)
-    except Exception:
+    except Exception as e:
+        print(f"[AUTH] Timeout esperando resultado: {e}")
         return HTMLResponse("<h2>Tiempo agotado</h2><a href='/auth'>Volver</a>")
 
 def _result_page(sess: AuthSession, result: str, err) -> HTMLResponse:
