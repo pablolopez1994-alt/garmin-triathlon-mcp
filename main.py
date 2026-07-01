@@ -43,8 +43,9 @@ def load_tokens_from_env() -> bool:
         return False
 
 def export_tokens(client) -> str:
+    import garth
     os.makedirs(GARTH_DIR, exist_ok=True)
-    client.garth.save(GARTH_DIR)
+    garth.save(GARTH_DIR)
     data = {}
     for fname in os.listdir(GARTH_DIR):
         fpath = os.path.join(GARTH_DIR, fname)
