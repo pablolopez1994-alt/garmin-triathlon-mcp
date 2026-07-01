@@ -254,7 +254,7 @@ async def auth_mfa(request: Request):
         return HTMLResponse("<h2>Sesión no encontrada</h2><a href='/auth'>Volver</a>")
     sess.mfa_queue.put(code)
     try:
-        result, err = sess.result_queue.get(timeout=30)
+        result, err = sess.result_queue.get(timeout=120)
         return _result_page(sess, result, err)
     except Exception:
         return HTMLResponse("<h2>Tiempo agotado</h2><a href='/auth'>Volver</a>")
