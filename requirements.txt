@@ -1,4 +1,4 @@
-garminconnect==0.2.22
+garminconnect
 mcp[cli]
 apscheduler==3.10.4
 uvicorn
