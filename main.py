@@ -264,11 +264,11 @@ async def auth_mfa(request: Request):
     sess.mfa_queue.put(code)
     try:
         result, err = sess.result_queue.get(timeout=120)
-        print(f"[AUTH] Resultado: {result} / {err}")
-        return _result_page(sess, result, err)
-    except Exception as e:
-        print(f"[AUTH] Timeout esperando resultado: {e}")
+    except _queue.Empty:
+        print("[AUTH] Timeout esperando resultado de Garmin")
         return HTMLResponse("<h2>Tiempo agotado</h2><a href='/auth'>Volver</a>")
+    print(f"[AUTH] Resultado: {result} / {err}")
+    return _result_page(sess, result, err)
 
 def _result_page(sess: AuthSession, result: str, err) -> HTMLResponse:
     if result == "ok":
