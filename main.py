@@ -2,7 +2,6 @@ import os
 import json
 import base64
 import uuid
-import time
 import threading
 import queue as _queue
 import smtplib
@@ -222,6 +221,7 @@ async def auth_page(request: Request):
 </div></body></html>""")
 
 async def auth_start(request: Request):
+    import asyncio
     form     = await request.form()
     email    = str(form.get("email", ""))
     password = str(form.get("password", ""))
@@ -231,8 +231,8 @@ async def auth_start(request: Request):
 
     threading.Thread(target=_run_login, args=(email, password, sess), daemon=True).start()
 
-    for _ in range(100):
-        time.sleep(0.1)
+    for _ in range(600):  # hasta 60 segundos
+        await asyncio.sleep(0.1)
         if sess.needs_mfa.is_set():
             return HTMLResponse(f"""<!DOCTYPE html><html><head><meta charset="utf-8">{CSS}</head><body>
 <div class="card">
@@ -248,7 +248,7 @@ async def auth_start(request: Request):
         try:
             result, err = sess.result_queue.get_nowait()
             return _result_page(sess, result, err)
-        except Exception:
+        except _queue.Empty:
             pass
 
     return HTMLResponse("<h2>Tiempo agotado</h2><a href='/auth'>Volver</a>")
