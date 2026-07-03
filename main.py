@@ -42,14 +42,7 @@ def load_tokens_from_env() -> bool:
         return False
 
 def export_tokens(client) -> str:
-    os.makedirs(GARTH_DIR, exist_ok=True)
-    if hasattr(client, "garth"):
-        client.garth.save(GARTH_DIR)
-        print("[TOKEN] Guardado via client.garth.save()")
-    else:
-        import garth
-        garth.save(GARTH_DIR)
-        print("[TOKEN] Guardado via garth module (fallback)")
+    # Los tokens ya fueron guardados en GARTH_DIR durante login(tokenstore=GARTH_DIR)
     data = {}
     for fname in os.listdir(GARTH_DIR):
         fpath = os.path.join(GARTH_DIR, fname)
@@ -58,8 +51,8 @@ def export_tokens(client) -> str:
                 content = f.read()
             print(f"[TOKEN] {fname}: {len(content)} chars")
             data[fname] = content
-    if all(v == "" for v in data.values()):
-        raise ValueError("Tokens vacíos — el login no guardó sesión. Inténtalo de nuevo.")
+    if not data or all(v == "" for v in data.values()):
+        raise ValueError("Tokens vacíos. Inténtalo de nuevo.")
     print(f"[TOKEN] {len(data)} archivos guardados OK")
     return base64.b64encode(json.dumps(data).encode()).decode()
 
@@ -70,14 +63,8 @@ def connect_garmin() -> Garmin:
         files = os.listdir(GARTH_DIR) if os.path.exists(GARTH_DIR) else []
         print(f"[GARMIN] Archivos: {files}")
         client = Garmin()
-        if hasattr(client, "garth"):
-            client.garth.load(GARTH_DIR)
-            print("[GARMIN] Cargado via client.garth.load()")
-        else:
-            import garth
-            garth.load(GARTH_DIR)
-            client.login(tokenstore=GARTH_DIR)
-            print("[GARMIN] Cargado via garth module")
+        client.login(tokenstore=GARTH_DIR)
+        print("[GARMIN] Login con tokenstore OK")
         return client
     raise ValueError("Sin tokens. Visita /auth para autenticarte.")
 
@@ -198,10 +185,11 @@ def _run_login(email: str, password: str, sess: AuthSession):
         return code
     try:
         print(f"[AUTH] Iniciando login para {email}")
+        os.makedirs(GARTH_DIR, exist_ok=True)
         client = Garmin(email, password)
         client.prompt_mfa = get_mfa
-        client.login()
-        print("[AUTH] Login exitoso")
+        client.login(tokenstore=GARTH_DIR)  # guarda tokens automáticamente
+        print("[AUTH] Login exitoso, tokens guardados en GARTH_DIR")
         sess.client = client
         sess.result_queue.put(("ok", None))
     except Exception as e:
