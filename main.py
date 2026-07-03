@@ -42,38 +42,44 @@ def load_tokens_from_env() -> bool:
         return False
 
 def export_tokens(client) -> str:
-    import garth
     os.makedirs(GARTH_DIR, exist_ok=True)
-    garth.save(GARTH_DIR)
+    if hasattr(client, "garth"):
+        client.garth.save(GARTH_DIR)
+        print("[TOKEN] Guardado via client.garth.save()")
+    else:
+        import garth
+        garth.save(GARTH_DIR)
+        print("[TOKEN] Guardado via garth module (fallback)")
     data = {}
     for fname in os.listdir(GARTH_DIR):
         fpath = os.path.join(GARTH_DIR, fname)
         if os.path.isfile(fpath):
             with open(fpath) as f:
                 content = f.read()
-            print(f"[TOKEN] {fname}: {len(content)} chars, preview: {content[:80]}")
+            print(f"[TOKEN] {fname}: {len(content)} chars")
             data[fname] = content
-    print(f"[TOKEN] Total archivos guardados: {len(data)}")
+    if all(v == "" for v in data.values()):
+        raise ValueError("Tokens vacíos — el login no guardó sesión. Inténtalo de nuevo.")
+    print(f"[TOKEN] {len(data)} archivos guardados OK")
     return base64.b64encode(json.dumps(data).encode()).decode()
 
 def connect_garmin() -> Garmin:
-    import garth
     has_tokens = load_tokens_from_env()
-    print(f"[GARMIN] load_tokens_from_env={has_tokens}")
+    print(f"[GARMIN] has_tokens={has_tokens}")
     if has_tokens:
         files = os.listdir(GARTH_DIR) if os.path.exists(GARTH_DIR) else []
-        print(f"[GARMIN] Archivos en GARTH_DIR: {files}")
-        try:
+        print(f"[GARMIN] Archivos: {files}")
+        client = Garmin()
+        if hasattr(client, "garth"):
+            client.garth.load(GARTH_DIR)
+            print("[GARMIN] Cargado via client.garth.load()")
+        else:
+            import garth
             garth.load(GARTH_DIR)
-            print("[GARMIN] garth.load OK")
-            client = Garmin()
             client.login(tokenstore=GARTH_DIR)
-            print("[GARMIN] login con tokenstore OK")
-            return client
-        except Exception as e:
-            print(f"[GARMIN] Fallo con tokens: {e}")
-            raise ValueError(f"Token inválido, vuelve a autenticarte en /auth: {e}")
-    raise ValueError("Sin credenciales. Visita /auth para autenticarte.")
+            print("[GARMIN] Cargado via garth module")
+        return client
+    raise ValueError("Sin tokens. Visita /auth para autenticarte.")
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
