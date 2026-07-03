@@ -54,14 +54,11 @@ def export_tokens(client) -> str:
     return base64.b64encode(json.dumps(data).encode()).decode()
 
 def connect_garmin() -> Garmin:
-    load_tokens_from_env()
-    if os.path.exists(GARTH_DIR) and os.listdir(GARTH_DIR):
-        try:
-            client = Garmin()
-            client.login(tokenstore=GARTH_DIR)
-            return client
-        except Exception:
-            pass
+    import garth
+    if load_tokens_from_env():
+        garth.load(GARTH_DIR)
+        client = Garmin()
+        return client
     email    = os.environ.get("GARMIN_EMAIL", "")
     password = os.environ.get("GARMIN_PASSWORD", "")
     if not email or not password:
@@ -69,7 +66,6 @@ def connect_garmin() -> Garmin:
     client = Garmin(email, password)
     client.login()
     return client
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def fmt_duration(seconds: float) -> str:
