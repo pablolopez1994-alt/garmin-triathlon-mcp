@@ -50,22 +50,31 @@ def export_tokens(client) -> str:
         fpath = os.path.join(GARTH_DIR, fname)
         if os.path.isfile(fpath):
             with open(fpath) as f:
-                data[fname] = f.read()
+                content = f.read()
+            print(f"[TOKEN] {fname}: {len(content)} chars, preview: {content[:80]}")
+            data[fname] = content
+    print(f"[TOKEN] Total archivos guardados: {len(data)}")
     return base64.b64encode(json.dumps(data).encode()).decode()
 
 def connect_garmin() -> Garmin:
     import garth
-    if load_tokens_from_env():
-        garth.load(GARTH_DIR)
-        client = Garmin()
-        return client
-    email    = os.environ.get("GARMIN_EMAIL", "")
-    password = os.environ.get("GARMIN_PASSWORD", "")
-    if not email or not password:
-        raise ValueError("Sin credenciales. Visita /auth para autenticarte.")
-    client = Garmin(email, password)
-    client.login()
-    return client
+    has_tokens = load_tokens_from_env()
+    print(f"[GARMIN] load_tokens_from_env={has_tokens}")
+    if has_tokens:
+        files = os.listdir(GARTH_DIR) if os.path.exists(GARTH_DIR) else []
+        print(f"[GARMIN] Archivos en GARTH_DIR: {files}")
+        try:
+            garth.load(GARTH_DIR)
+            print("[GARMIN] garth.load OK")
+            client = Garmin()
+            client.login(tokenstore=GARTH_DIR)
+            print("[GARMIN] login con tokenstore OK")
+            return client
+        except Exception as e:
+            print(f"[GARMIN] Fallo con tokens: {e}")
+            raise ValueError(f"Token inválido, vuelve a autenticarte en /auth: {e}")
+    raise ValueError("Sin credenciales. Visita /auth para autenticarte.")
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def fmt_duration(seconds: float) -> str:
